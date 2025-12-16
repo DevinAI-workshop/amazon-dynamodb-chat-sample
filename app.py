@@ -48,7 +48,8 @@ def comment_add():
     ddbTable = create_connection('chat')
     ddbclient = DdbChat()
 
-    response = ddbclient.putComment(ddbTable, body['name'], body['comment'], 'chat')
+    ttl_option = body.get('ttl', 'never')
+    response = ddbclient.putComment(ddbTable, body['name'], body['comment'], 'chat', ttl_option)
     logging.info('add request response is  : %s', response)
 
     return {'state': 'Commment add OK', 'time': response['time']}

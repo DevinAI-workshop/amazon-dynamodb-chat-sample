@@ -51,6 +51,15 @@
                         title="comment"
                         placeholder="Please write comment.">
             </div>
+            <div class="col">
+                <label>Disappear After</label>
+                <select class="form-control" v-model="form.ttl">
+                    <option value="never">Never</option>
+                    <option value="1min">1 Minute</option>
+                    <option value="5min">5 Minutes</option>
+                    <option value="24hr">24 Hours</option>
+                </select>
+            </div>
         </div>
         <div class="form-group">
             <button class="btn btn-primary" type="submit">Submit
@@ -131,7 +140,11 @@
         el: "#add",
         data() {
             return {
-                form: {},
+                form: {
+                    name: '',
+                    comment: '',
+                    ttl: 'never'
+                },
                 result: {},
                 url: {},
                 latest_comments: {},
@@ -145,7 +158,8 @@
             onsubmit: function () {
                 axios.post('http://localhost:8080/chat/comments/add', {
                     name: this.form.name,
-                    comment: this.form.comment
+                    comment: this.form.comment,
+                    ttl: this.form.ttl
                 }).then(
                     response => {
                     this.result = Object.assign({}, this.form, this.server_status = response.data);
