@@ -11,8 +11,10 @@
             }
         },
       "dev": {
+        "api_gateway_stage": "api",
         "environment_variables": {
-                "API_ENDPOINT": "https://your_API_ENDPOINT"
+                "API_ENDPOINT": "https://your-api-endpoint.amazonaws.com/api/",
+                "WEBSOCKET_ENDPOINT": "https://your-websocket-endpoint.amazonaws.com/prod"
             }
         }
     }

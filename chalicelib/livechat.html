@@ -49,7 +49,8 @@
                         v-model="form.comment"
                         type="text"
                         title="comment"
-                        placeholder="Please write comment.">
+                        placeholder="Please write comment."
+                        @input="onTyping">
             </div>
         </div>
         <div class="form-group">
@@ -62,9 +63,15 @@
 </div>
 
 <div id="latest">
-    <div class="border-top">Latest comment list(Auto reload: 3sec period)</div>
+    <div class="border-top">Latest comment list (Real-time via WebSocket)</div>
     <button v-on:click="get_latest" class="btn btn-primary">latest comments</button>
+    <span class="ml-2" :class="{'text-success': ws_connected, 'text-danger': !ws_connected}">
+        {{ ws_connected ? 'Connected' : 'Disconnected' }}
+    </span>
 
+    <div v-if="typing_users_list.length > 0" class="typing-indicator text-muted mt-2">
+        <em>{{ typing_users_list.join(', ') }} {{ typing_users_list.length === 1 ? 'is' : 'are' }} typing...</em>
+    </div>
 
     <table class="table">
         <thead>
@@ -131,32 +138,42 @@
         el: "#add",
         data() {
             return {
-                form: {},
-                result: {},
-                url: {},
-                latest_comments: {},
-                latest_id: ''
+                form: { name: '', comment: '' },
+                result: {}
             }
         },
         methods: {
             addHandler: function () {
-                this.onsubmit();
-            },
-            onsubmit: function () {
-                axios.post('http://localhost:8080/chat/comments/add', {
-                    name: this.form.name,
-                    comment: this.form.comment
-                }).then(
-                    response => {
-                    this.result = Object.assign({}, this.form, this.server_status = response.data);
-                this.url = 'http://localhost:8080/chat/comments/latest/' + this.result.comment_seq_id;
-                /*
-                axios.get(this.url, {}).then(
-                    response => {
-                    this.latest_comments = response.data;
-                });*/
-            })
+                if (this.form.name && this.form.comment) {
+                    if (window.latest_comments && window.latest_comments.ws &&
+                        window.latest_comments.ws.readyState === WebSocket.OPEN) {
+                        window.latest_comments.ws.send(JSON.stringify({
+                            type: 'comment',
+                            name: this.form.name,
+                            comment: this.form.comment
+                        }));
 
+                        window.latest_comments.current_user = this.form.name;
+
+                        this.result = { state: 'Comment sent!', time: new Date().toISOString() };
+                        this.form.comment = '';
+                    } else {
+                        var self = this;
+                        axios.post('http://localhost:8080/chat/comments/add', {
+                            name: this.form.name,
+                            comment: this.form.comment
+                        }).then(function(response) {
+                            self.result = Object.assign({}, self.form, response.data);
+                            self.form.comment = '';
+                        });
+                    }
+                }
+            },
+            onTyping: function() {
+                if (window.latest_comments) {
+                    window.latest_comments.current_user = this.form.name;
+                    window.latest_comments.handle_typing();
+                }
             }
         }
     });
@@ -166,29 +183,115 @@
     var latest_comments = new Vue({
         el: "#latest",
         data: {
-            latest_comments: []
+            latest_comments: [],
+            ws: null,
+            typing_users: {},
+            current_user: '',
+            is_typing: false,
+            typing_timer: null,
+            ws_connected: false
         },
-        headers: {
-            'Content-Type': 'application/json;charset=UTF-8',
-            'Access-Control-Allow-Origin': '*',
+        computed: {
+            typing_users_list: function() {
+                return Object.keys(this.typing_users).filter(function(user) {
+                    return this.typing_users[user];
+                }, this);
+            }
         },
-        "methods": {
-            get_latest: function (e) {
-                /*
-                Todo set seq id API call
-                 */
+        methods: {
+            connect_websocket: function() {
+                var self = this;
+                var protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+                var ws_url = protocol + '//' + window.location.host + '/';
 
+                self.ws = new WebSocket(ws_url);
+
+                self.ws.onopen = function() {
+                    console.log('WebSocket connected');
+                    self.ws_connected = true;
+                    self.ws.send(JSON.stringify({
+                        type: 'join',
+                        user: self.current_user || 'Anonymous'
+                    }));
+                };
+
+                self.ws.onmessage = function(event) {
+                    var data = JSON.parse(event.data);
+                    console.log('WebSocket message:', data);
+
+                    if (data.type === 'new_comment') {
+                        if (!self.latest_comments.response) {
+                            self.latest_comments.response = [];
+                        }
+                        self.latest_comments.response.unshift({
+                            time: data.time,
+                            name: data.name,
+                            comment: data.comment
+                        });
+                        if (self.latest_comments.response.length > 20) {
+                            self.latest_comments.response.pop();
+                        }
+                    } else if (data.type === 'typing') {
+                        self.$set(self.typing_users, data.user, data.is_typing);
+                    } else if (data.type === 'user_joined' || data.type === 'user_left') {
+                        console.log(data.user + ' ' + (data.type === 'user_joined' ? 'joined' : 'left') + ' the chat');
+                    }
+                };
+
+                self.ws.onclose = function() {
+                    console.log('WebSocket disconnected, attempting reconnect...');
+                    self.ws_connected = false;
+                    setTimeout(function() {
+                        self.connect_websocket();
+                    }, 3000);
+                };
+
+                self.ws.onerror = function(error) {
+                    console.error('WebSocket error:', error);
+                };
+            },
+
+            send_typing_indicator: function(is_typing) {
+                if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+                    this.ws.send(JSON.stringify({
+                        type: 'typing',
+                        user: this.current_user || 'Anonymous',
+                        is_typing: is_typing
+                    }));
+                }
+            },
+
+            handle_typing: function() {
+                var self = this;
+                if (!self.is_typing) {
+                    self.is_typing = true;
+                    self.send_typing_indicator(true);
+                }
+
+                clearTimeout(self.typing_timer);
+                self.typing_timer = setTimeout(function() {
+                    self.is_typing = false;
+                    self.send_typing_indicator(false);
+                }, 1000);
+            },
+
+            get_latest: function (e) {
+                var self = this;
                 axios.get('http://localhost:8080/chat/comments/latest', {}).then(
-                    response => {
-                    this.latest_comments = response.data;
-            })
-                ;
+                    function(response) {
+                        self.latest_comments = response.data;
+                    }
+                );
             }
         },
         mounted: function () {
-            setInterval(this.get_latest, 3000)
+            this.connect_websocket();
+            this.get_latest();
         },
         destroyed: function () {
+            if (this.ws) {
+                this.ws.close();
+            }
         }
     });
 </script>
