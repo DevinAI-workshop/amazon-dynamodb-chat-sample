@@ -5,6 +5,7 @@ import re
 
 from chalice import Chalice, Response
 from chalicelib.ddb import DdbChat
+from chalicelib.ddb import DdbDiary
 from chalicelib.ddb import create_connection
 
 logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.DEBUG)
@@ -89,3 +90,55 @@ def comment_range_get(latest_seq_id):
     logging.info('latest comments next id response : %s', response)
 
     return {'response': response}
+
+
+@app.route('/diary/save', methods=['POST'], cors=True)
+def diary_save():
+    body = app.current_request.json_body
+    logging.info('diary save POST request Body : %s', body)
+
+    ddbTable = create_connection('diary')
+    ddbclient = DdbDiary()
+
+    response = ddbclient.saveToDiary(
+        ddbTable,
+        body['user_name'],
+        body['original_name'],
+        body['original_time'],
+        body['comment'],
+        body.get('chat_room', 'chat')
+    )
+    logging.info('diary save response is  : %s', response)
+
+    return {'state': 'Saved to diary OK', 'saved_time': response['saved_time']}
+
+
+@app.route('/diary/entries/{user_name}', methods=['GET'], cors=True)
+def diary_entries_get(user_name):
+    logging.info('diary entries GET request user_name : %s', user_name)
+
+    ddbTable = create_connection('diary')
+    ddbclient = DdbDiary()
+
+    response = ddbclient.getDiaryEntries(ddbTable, user_name)
+    logging.info('diary entries response : %s', response)
+
+    return {'response': response}
+
+
+@app.route('/diary/delete', methods=['POST'], cors=True)
+def diary_delete():
+    body = app.current_request.json_body
+    logging.info('diary delete POST request Body : %s', body)
+
+    ddbTable = create_connection('diary')
+    ddbclient = DdbDiary()
+
+    response = ddbclient.deleteDiaryEntry(
+        ddbTable,
+        body['user_name'],
+        body['saved_time']
+    )
+    logging.info('diary delete response is  : %s', response)
+
+    return {'state': 'Deleted from diary OK'}

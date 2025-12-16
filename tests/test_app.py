@@ -52,3 +52,53 @@ def test_put_add_comment(client):
     assert 'time' in response.json
     assert 'oranie' in get_result['Item']['name']
     assert 'test done' in get_result['Item']['comment']
+
+
+def test_diary_save(client):
+    response = client.post('/diary/save',
+                           headers={'Content-Type': 'application/json'},
+                           body=json.dumps({
+                               'user_name': 'test_user',
+                               'original_name': 'oranie',
+                               'original_time': '1234567890',
+                               'comment': 'test diary entry',
+                               'chat_room': 'chat'
+                           }))
+
+    print('test_diary_save:' + str(response.json.items()))
+    assert response.status_code == HTTPStatus.OK
+    assert response.json['state'] == 'Saved to diary OK'
+    assert 'saved_time' in response.json
+
+
+def test_diary_get_entries(client):
+    response = client.get('/diary/entries/test_user')
+
+    print('test_diary_get_entries:' + str(response.json.items()))
+    assert response.status_code == HTTPStatus.OK
+    assert 'response' in response.json
+
+
+def test_diary_delete(client):
+    save_response = client.post('/diary/save',
+                                headers={'Content-Type': 'application/json'},
+                                body=json.dumps({
+                                    'user_name': 'delete_test_user',
+                                    'original_name': 'oranie',
+                                    'original_time': '1234567890',
+                                    'comment': 'entry to delete',
+                                    'chat_room': 'chat'
+                                }))
+
+    saved_time = save_response.json['saved_time']
+
+    response = client.post('/diary/delete',
+                           headers={'Content-Type': 'application/json'},
+                           body=json.dumps({
+                               'user_name': 'delete_test_user',
+                               'saved_time': saved_time
+                           }))
+
+    print('test_diary_delete:' + str(response.json.items()))
+    assert response.status_code == HTTPStatus.OK
+    assert response.json['state'] == 'Deleted from diary OK'

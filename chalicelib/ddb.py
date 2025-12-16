@@ -115,6 +115,70 @@ class DdbChat():
         return result
 
 
+class DdbDiary():
+    def saveToDiary(self, table, user_name, original_name, original_time, comment, chat_room):
+        logging.info('saveToDiary params : %s %s %s %s %s %s',
+                     table, user_name, original_name, original_time, comment, chat_room)
+        saved_time = str(datetime.now().timestamp())
+
+        result = table.put_item(
+            Item={
+                'user_name': user_name,
+                'saved_time': saved_time,
+                'original_name': original_name,
+                'original_time': original_time,
+                'comment': comment,
+                'chat_room': chat_room
+            },
+            ReturnValues='ALL_OLD',
+            ReturnConsumedCapacity='TOTAL'
+        )
+        result['saved_time'] = saved_time
+        logging.info('saveToDiary result :' + str(result))
+
+        return result
+
+    def getDiaryEntries(self, table, user_name):
+        logging.info('getDiaryEntries params : %s %s', table, user_name)
+
+        result = []
+
+        response = table.query(
+            KeyConditionExpression=Key('user_name').eq(user_name),
+            ScanIndexForward=False
+        )
+
+        for index, item in enumerate(response['Items']):
+            result.append(item)
+
+        while 'LastEvaluatedKey' in response:
+            print('LastEvaluatedKey Hit!!!')
+            response = table.query(
+                KeyConditionExpression=Key('user_name').eq(user_name),
+                ScanIndexForward=False,
+                ExclusiveStartKey=response['LastEvaluatedKey']
+            )
+
+            for index, item in enumerate(response['Items']):
+                result.append(item)
+
+        return result
+
+    def deleteDiaryEntry(self, table, user_name, saved_time):
+        logging.info('deleteDiaryEntry params : %s %s %s', table, user_name, saved_time)
+
+        result = table.delete_item(
+            Key={
+                'user_name': user_name,
+                'saved_time': saved_time
+            },
+            ReturnValues='ALL_OLD'
+        )
+        logging.info('deleteDiaryEntry result :' + str(result))
+
+        return result
+
+
 """
 if __name__ == "__main__":
     ddb = DdbChat()
