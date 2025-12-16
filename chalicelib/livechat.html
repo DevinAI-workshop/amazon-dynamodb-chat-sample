@@ -62,7 +62,7 @@
 </div>
 
 <div id="latest">
-    <div class="border-top">Latest comment list(Auto reload: 3sec period)</div>
+    <div class="border-top">Latest comment list(Auto reload: adaptive 1-10sec)</div>
     <button v-on:click="get_latest" class="btn btn-primary">latest comments</button>
 
 
@@ -166,7 +166,9 @@
     var latest_comments = new Vue({
         el: "#latest",
         data: {
-            latest_comments: []
+            latest_comments: [],
+            pollInterval: 3000,
+            lastTimestamp: 0
         },
         headers: {
             'Content-Type': 'application/json;charset=UTF-8',
@@ -183,10 +185,34 @@
                     this.latest_comments = response.data;
             })
                 ;
+            },
+            adaptivePoll: function() {
+                var self = this;
+                var poll = function() {
+                    axios.get('http://localhost:8080/chat/comments/latest/' + self.lastTimestamp)
+                        .then(function(response) {
+                            if (response.data.response && response.data.response.length > 0) {
+                                self.pollInterval = Math.max(1000, self.pollInterval * 0.8);
+                                self.latest_comments = response.data;
+                                var latestTime = response.data.response[0].time;
+                                if (latestTime) {
+                                    self.lastTimestamp = latestTime;
+                                }
+                            } else {
+                                self.pollInterval = Math.min(10000, self.pollInterval * 1.2);
+                            }
+                            setTimeout(poll, self.pollInterval);
+                        })
+                        .catch(function() {
+                            self.pollInterval = Math.min(30000, self.pollInterval * 2);
+                            setTimeout(poll, self.pollInterval);
+                        });
+                };
+                poll();
             }
         },
         mounted: function () {
-            setInterval(this.get_latest, 3000)
+            this.adaptivePoll();
         },
         destroyed: function () {
         }
