@@ -13,6 +13,11 @@ logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.DEBUG)
 
 app = Chalice(app_name='dynamodb-python-chat-sample')
 
+# Enable experimental WebSocket support
+app.experimental_feature_flags.update([
+    'WEBSOCKETS'
+])
+
 # WebSocket connection manager
 connections = {}
 
