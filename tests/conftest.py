@@ -7,6 +7,7 @@ import pytest
 from app import app as chalice_app
 
 DDB_TABLE_NAME = 'chat'  # TODO: Better to acquire from other constant or configured env var
+DDB_DIARY_TABLE_NAME = 'diary'
 
 if os.environ['API_ENDPOINT'] == 'localhost':
     ddb = boto3.resource('dynamodb', endpoint_url='http://localhost:8000')
@@ -14,6 +15,7 @@ else:
     ddb = boto3.resource('dynamodb')
 
 table = ddb.Table(DDB_TABLE_NAME)
+diary_table = ddb.Table(DDB_DIARY_TABLE_NAME)
 
 
 @pytest.fixture
@@ -89,12 +91,46 @@ def ddb_test_data_put():
     )
 
 
+def _create_test_diary_table():
+    return ddb.create_table(
+        TableName=DDB_DIARY_TABLE_NAME,
+        AttributeDefinitions=[
+            {
+                'AttributeName': 'user_name',
+                'AttributeType': 'S',
+            },
+            {
+                'AttributeName': 'saved_time',
+                'AttributeType': 'S',
+            },
+        ],
+        KeySchema=[
+            {
+                'AttributeName': 'user_name',
+                'KeyType': 'HASH',
+            },
+            {
+                'AttributeName': 'saved_time',
+                'KeyType': 'RANGE',
+            },
+        ],
+        ProvisionedThroughput={
+            'ReadCapacityUnits': 100,
+            'WriteCapacityUnits': 100
+        },
+    )
+
+
 @pytest.fixture(autouse=True, scope='session')
 def ddb_table():
     _create_test_ddb_table()
+    _create_test_diary_table()
     table.wait_until_exists()
+    diary_table.wait_until_exists()
     ddb_test_data_put()
 
     yield table
     table.delete()
+    diary_table.delete()
     table.wait_until_not_exists()
+    diary_table.wait_until_not_exists()

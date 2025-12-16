@@ -1,130 +1,458 @@
 <html xmlns:v-on="http://www.w3.org/1999/xhtml">
 <head>
     <meta charset="UTF-8">
-    <link type="text/css" rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap/dist/css/bootstrap.min.css"/>
-    <link type="text/css" rel="stylesheet"
-          href="https://cdn.jsdelivr.net/npm/bootstrap-vue@latest/dist/bootstrap-vue.min.css"/>
-
-    <!-- Load polyfills to support older browsers -->
-    <script src="https://polyfill.io/v3/polyfill.min.js?features=es2015%2CMutationObserver"
-            crossorigin="anonymous"></script>
-
-    <!-- Load Vue followed by BootstrapVue -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chat & Diary</title>
+    
     <script src="https://cdn.jsdelivr.net/npm/vue@latest/dist/vue.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap-vue@latest/dist/bootstrap-vue.min.js"></script>
-
     <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background: linear-gradient(180deg, #f5f5f7 0%, #ffffff 100%);
+            min-height: 100vh;
+            color: #1d1d1f;
+            line-height: 1.5;
+            -webkit-font-smoothing: antialiased;
+        }
+        
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 48px;
+        }
+        
+        .header h1 {
+            font-size: 48px;
+            font-weight: 600;
+            letter-spacing: -0.5px;
+            background: linear-gradient(90deg, #1d1d1f 0%, #515154 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .header p {
+            font-size: 17px;
+            color: #86868b;
+            margin-top: 8px;
+        }
+        
+        .card {
+            background: #ffffff;
+            border-radius: 18px;
+            padding: 28px;
+            margin-bottom: 24px;
+            box-shadow: 0 4px 24px rgba(0, 0, 0, 0.06);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+        
+        .card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
+        }
+        
+        .card-title {
+            font-size: 22px;
+            font-weight: 600;
+            color: #1d1d1f;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .card-title .icon {
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            color: #ffffff;
+        }
+        
+        .icon-chat { background: linear-gradient(135deg, #007AFF 0%, #5856D6 100%); }
+        .icon-diary { background: linear-gradient(135deg, #FF9500 0%, #FF3B30 100%); }
+        .icon-messages { background: linear-gradient(135deg, #34C759 0%, #30D158 100%); }
+        
+        .form-group {
+            margin-bottom: 16px;
+        }
+        
+        .form-row {
+            display: flex;
+            gap: 16px;
+        }
+        
+        .form-row .form-group {
+            flex: 1;
+        }
+        
+        label {
+            display: block;
+            font-size: 13px;
+            font-weight: 500;
+            color: #86868b;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        input[type="text"] {
+            width: 100%;
+            padding: 14px 16px;
+            font-size: 17px;
+            border: 1px solid #d2d2d7;
+            border-radius: 12px;
+            background: #f5f5f7;
+            transition: all 0.2s ease;
+            outline: none;
+            font-family: inherit;
+        }
+        
+        input[type="text"]:focus {
+            border-color: #007AFF;
+            background: #ffffff;
+            box-shadow: 0 0 0 4px rgba(0, 122, 255, 0.1);
+        }
+        
+        input[type="text"]::placeholder {
+            color: #86868b;
+        }
+        
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 14px 24px;
+            font-size: 15px;
+            font-weight: 500;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-family: inherit;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #007AFF 0%, #0066CC 100%);
+            color: #ffffff;
+        }
+        
+        .btn-primary:hover {
+            transform: scale(1.02);
+            box-shadow: 0 4px 16px rgba(0, 122, 255, 0.3);
+        }
+        
+        .btn-success {
+            background: linear-gradient(135deg, #34C759 0%, #248A3D 100%);
+            color: #ffffff;
+            padding: 10px 16px;
+            font-size: 13px;
+        }
+        
+        .btn-success:hover {
+            transform: scale(1.02);
+            box-shadow: 0 4px 16px rgba(52, 199, 89, 0.3);
+        }
+        
+        .btn-danger {
+            background: linear-gradient(135deg, #FF3B30 0%, #D70015 100%);
+            color: #ffffff;
+            padding: 10px 16px;
+            font-size: 13px;
+        }
+        
+        .btn-danger:hover {
+            transform: scale(1.02);
+            box-shadow: 0 4px 16px rgba(255, 59, 48, 0.3);
+        }
+        
+        .message-list {
+            margin-top: 20px;
+        }
+        
+        .message-item {
+            display: flex;
+            align-items: flex-start;
+            padding: 16px;
+            background: #f5f5f7;
+            border-radius: 14px;
+            margin-bottom: 12px;
+            transition: all 0.2s ease;
+        }
+        
+        .message-item:hover {
+            background: #e8e8ed;
+        }
+        
+        .message-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #007AFF 0%, #5856D6 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #ffffff;
+            font-weight: 600;
+            font-size: 16px;
+            margin-right: 14px;
+            flex-shrink: 0;
+        }
+        
+        .message-content {
+            flex: 1;
+            min-width: 0;
+        }
+        
+        .message-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 4px;
+        }
+        
+        .message-author {
+            font-weight: 600;
+            font-size: 15px;
+            color: #1d1d1f;
+        }
+        
+        .message-time {
+            font-size: 13px;
+            color: #86868b;
+        }
+        
+        .message-text {
+            font-size: 15px;
+            color: #1d1d1f;
+            word-wrap: break-word;
+        }
+        
+        .message-actions {
+            margin-left: 14px;
+            flex-shrink: 0;
+        }
+        
+        .diary-item {
+            display: flex;
+            align-items: flex-start;
+            padding: 16px;
+            background: linear-gradient(135deg, #FFF9E6 0%, #FFF5D6 100%);
+            border-radius: 14px;
+            margin-bottom: 12px;
+            border: 1px solid #FFE4A0;
+        }
+        
+        .diary-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #FF9500 0%, #FF3B30 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #ffffff;
+            font-size: 18px;
+            margin-right: 14px;
+            flex-shrink: 0;
+        }
+        
+        .alert {
+            padding: 14px 18px;
+            border-radius: 12px;
+            font-size: 15px;
+            margin-top: 16px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .alert-success {
+            background: linear-gradient(135deg, #E8F9ED 0%, #D4F5DE 100%);
+            color: #1D7A36;
+            border: 1px solid #A8E6BD;
+        }
+        
+        .alert-info {
+            background: linear-gradient(135deg, #E5F4FF 0%, #CCE9FF 100%);
+            color: #0066CC;
+            border: 1px solid #99D1FF;
+        }
+        
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: #86868b;
+        }
+        
+        .empty-state .icon {
+            font-size: 48px;
+            margin-bottom: 16px;
+        }
+        
+        .empty-state p {
+            font-size: 17px;
+        }
+        
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #34C759;
+            display: inline-block;
+            margin-right: 8px;
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+    </style>
 </head>
 
 <body>
-
-<div id="app">
-    <div class="border-top">{{ title }}</div>
-    <button v-on:click="refresh" class="btn btn-primary">Refresh server status
-    </button>
-    <table class="table">
-        <tr v-for="server_status">
-            <td>{{ server_status.status }}</td>
-        </tr>
-    </table>
-</div>
-
-<div id="add">
-    <div class="border-top">Comment</div>
-    <form @submit.prevent="addHandler">
-        <div class="form-row">
-            <div class="col">
-                <label>Name</label>
-                <input
-                        class="form-control"
-                        v-model="form.name"
-                        type="text"
-                        required
-                        placeholder="Please set user name">
+    <div class="container">
+        <div class="header">
+            <h1>Chat & Diary</h1>
+            <p><span class="status-dot"></span>Powered by DynamoDB</p>
+        </div>
+        
+        <div id="add" class="card">
+            <div class="card-title">
+                <span class="icon icon-chat">+</span>
+                New Message
             </div>
-            <div class="col">
-                <label>Comment</label>
-                <input
-                        class="form-control"
-                        v-model="form.comment"
-                        type="text"
-                        title="comment"
-                        placeholder="Please write comment.">
+            <form @submit.prevent="addHandler">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Your Name</label>
+                        <input
+                            v-model="form.name"
+                            type="text"
+                            required
+                            placeholder="Enter your name">
+                    </div>
+                    <div class="form-group">
+                        <label>Message</label>
+                        <input
+                            v-model="form.comment"
+                            type="text"
+                            placeholder="What's on your mind?">
+                    </div>
+                </div>
+                <button class="btn btn-primary" type="submit">
+                    Send Message
+                </button>
+            </form>
+        </div>
+        
+        <div id="latest" class="card">
+            <div class="card-title">
+                <span class="icon icon-messages">M</span>
+                Recent Messages
+            </div>
+            
+            <div class="message-list">
+                <div v-if="latest_comments.response && latest_comments.response.length > 0">
+                    <div class="message-item" v-for="comment in latest_comments.response">
+                        <div class="message-avatar">{{ comment.name.charAt(0).toUpperCase() }}</div>
+                        <div class="message-content">
+                            <div class="message-header">
+                                <span class="message-author">{{ comment.name }}</span>
+                                <span class="message-time">{{ formatTime(comment.time) }}</span>
+                            </div>
+                            <div class="message-text">{{ comment.comment }}</div>
+                        </div>
+                        <div class="message-actions">
+                            <button v-on:click="save_to_diary(comment)" class="btn btn-success">
+                                Save
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <div v-else class="empty-state">
+                    <div class="icon">M</div>
+                    <p>No messages yet. Start the conversation!</p>
+                </div>
+            </div>
+            
+            <div v-if="save_message" class="alert alert-success">
+                {{ save_message }}
             </div>
         </div>
-        <div class="form-group">
-            <button class="btn btn-primary" type="submit">Submit
-            </button>
+        
+        <div id="diary" class="card">
+            <div class="card-title">
+                <span class="icon icon-diary">D</span>
+                My Diary
+            </div>
+            
+            <div class="form-row" style="margin-bottom: 20px;">
+                <div class="form-group" style="flex: 2;">
+                    <label>Diary Username</label>
+                    <input
+                        v-model="diary_user"
+                        type="text"
+                        placeholder="Enter your diary username">
+                </div>
+                <div class="form-group" style="flex: 1; display: flex; align-items: flex-end;">
+                    <button v-on:click="get_diary_entries" class="btn btn-primary" style="width: 100%;">
+                        Load Diary
+                    </button>
+                </div>
+            </div>
+            
+            <div class="message-list">
+                <div v-if="diary_entries.length > 0">
+                    <div class="diary-item" v-for="entry in diary_entries">
+                        <div class="diary-avatar">D</div>
+                        <div class="message-content">
+                            <div class="message-header">
+                                <span class="message-author">{{ entry.original_name }}</span>
+                                <span class="message-time">Saved {{ formatTime(entry.saved_time) }}</span>
+                            </div>
+                            <div class="message-text">{{ entry.comment }}</div>
+                        </div>
+                        <div class="message-actions">
+                            <button v-on:click="delete_diary_entry(entry)" class="btn btn-danger">
+                                Delete
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <div v-else-if="diary_user" class="empty-state">
+                    <div class="icon">D</div>
+                    <p>No diary entries yet. Save some messages!</p>
+                </div>
+                <div v-else class="empty-state">
+                    <div class="icon">D</div>
+                    <p>Enter your username to view your diary</p>
+                </div>
+            </div>
+            
+            <div v-if="diary_message" class="alert alert-info">
+                {{ diary_message }}
+            </div>
         </div>
-    </form>
-
-    <pre>{{ result }}</pre>
-</div>
-
-<div id="latest">
-    <div class="border-top">Latest comment list(Auto reload: 3sec period)</div>
-    <button v-on:click="get_latest" class="btn btn-primary">latest comments</button>
-
-
-    <table class="table">
-        <thead>
-        <tr>
-            <th scope="col">#</th>
-            <th scope="col">Name</th>
-            <th scope="col">Comment</th>
-        </tr>
-        </thead>
-        <tr v-for="comment in latest_comments.response">
-            <td>{{ comment.time }}</td>
-            <td>{{ comment.name }}</td>
-            <td>{{ comment.comment }}</td>
-        </tr>
-    </table>
-</div>
-
-<div id="all">
-    <div class="border-top">All comment list</div>
-    <button v-on:click="get_all" class="btn btn-primary">all comments
-    </button>
-
-    <table class="table">
-        <thead>
-        <tr>
-            <th scope="col">#</th>
-            <th scope="col">Name</th>
-            <th scope="col">Comment</th>
-        </tr>
-        </thead>
-        <tr v-for="comment in all_comments.response">
-            <td>{{ comment.stream_seq_id }}</td>
-            <td>{{ comment.name }}</td>
-            <td>{{ comment.comment }}</td>
-        </tr>
-    </table>
-</div>
-
-<script>
-    var app = new Vue({
-        el: "#app",
-        data: {
-            title: "Chat powerd by DynamoDB",
-            server_status: []
-        },
-        headers: {
-            'Content-Type': 'application/json;charset=UTF-8',
-            'Access-Control-Allow-Origin': '*',
-        },
-        methods: {
-            refresh: function (e) {
-                axios.get('http://localhost:8080/', {}).then(
-                    response => {
-                    this.server_status = response.data;
-            })
-                ;
-            }
-        }
-    });
-</script>
+    </div>
 
 <script>
     var add = new Vue({
@@ -132,10 +460,7 @@
         data() {
             return {
                 form: {},
-                result: {},
-                url: {},
-                latest_comments: {},
-                latest_id: ''
+                result: {}
             }
         },
         methods: {
@@ -148,15 +473,9 @@
                     comment: this.form.comment
                 }).then(
                     response => {
-                    this.result = Object.assign({}, this.form, this.server_status = response.data);
-                this.url = 'http://localhost:8080/chat/comments/latest/' + this.result.comment_seq_id;
-                /*
-                axios.get(this.url, {}).then(
-                    response => {
-                    this.latest_comments = response.data;
-                });*/
-            })
-
+                    this.result = response.data;
+                    this.form.comment = '';
+                })
             }
         }
     });
@@ -166,53 +485,99 @@
     var latest_comments = new Vue({
         el: "#latest",
         data: {
-            latest_comments: []
+            latest_comments: [],
+            save_message: ''
         },
-        headers: {
-            'Content-Type': 'application/json;charset=UTF-8',
-            'Access-Control-Allow-Origin': '*',
-        },
-        "methods": {
-            get_latest: function (e) {
-                /*
-                Todo set seq id API call
-                 */
-
+        methods: {
+            get_latest: function () {
                 axios.get('http://localhost:8080/chat/comments/latest', {}).then(
                     response => {
                     this.latest_comments = response.data;
-            })
-                ;
+                });
+            },
+            save_to_diary: function (comment) {
+                var diary_user = diary_vue.diary_user;
+                if (!diary_user) {
+                    alert('Please enter your diary username first!');
+                    return;
+                }
+                axios.post('http://localhost:8080/diary/save', {
+                    user_name: diary_user,
+                    original_name: comment.name,
+                    original_time: comment.time,
+                    comment: comment.comment,
+                    chat_room: comment.chat_room || 'chat'
+                }).then(
+                    response => {
+                    this.save_message = 'Saved to diary!';
+                    setTimeout(() => { this.save_message = ''; }, 2000);
+                    diary_vue.get_diary_entries();
+                }).catch(error => {
+                    alert('Error saving to diary: ' + error.message);
+                });
+            },
+            formatTime: function (timestamp) {
+                var date = new Date(parseFloat(timestamp) * 1000);
+                var now = new Date();
+                var diff = now - date;
+                
+                if (diff < 60000) return 'Just now';
+                if (diff < 3600000) return Math.floor(diff / 60000) + 'm ago';
+                if (diff < 86400000) return Math.floor(diff / 3600000) + 'h ago';
+                return date.toLocaleDateString();
             }
         },
         mounted: function () {
-            setInterval(this.get_latest, 3000)
-        },
-        destroyed: function () {
+            this.get_latest();
+            setInterval(this.get_latest, 3000);
         }
     });
 </script>
 
 <script>
-    var all_comments = new Vue({
-        el: "#all",
+    var diary_vue = new Vue({
+        el: "#diary",
         data: {
-            all_comments: []
-        },
-        headers: {
-            'Content-Type': 'application/json;charset=UTF-8',
-            'Access-Control-Allow-Origin': '*',
+            diary_user: '',
+            diary_entries: [],
+            diary_message: ''
         },
         methods: {
-            get_all: function (e) {
-                axios.get('http://localhost:8080/chat/comments/all', {}).then(
+            get_diary_entries: function () {
+                if (!this.diary_user) {
+                    this.diary_message = 'Please enter your diary username first.';
+                    return;
+                }
+                axios.get('http://localhost:8080/diary/entries/' + this.diary_user, {}).then(
                     response => {
-                    this.all_comments = response.data;
-            })
-                ;
+                    this.diary_entries = response.data.response;
+                    this.diary_message = '';
+                }).catch(error => {
+                    this.diary_message = 'Error loading diary: ' + error.message;
+                });
+            },
+            delete_diary_entry: function (entry) {
+                if (!confirm('Are you sure you want to delete this diary entry?')) {
+                    return;
+                }
+                axios.post('http://localhost:8080/diary/delete', {
+                    user_name: this.diary_user,
+                    saved_time: entry.saved_time
+                }).then(
+                    response => {
+                    this.diary_message = 'Entry deleted!';
+                    setTimeout(() => { this.diary_message = ''; }, 2000);
+                    this.get_diary_entries();
+                }).catch(error => {
+                    this.diary_message = 'Error deleting entry: ' + error.message;
+                });
+            },
+            formatTime: function (timestamp) {
+                var date = new Date(parseFloat(timestamp) * 1000);
+                return date.toLocaleString();
             }
         }
     });
 </script>
 </body>
-</html></body>
+</html>
